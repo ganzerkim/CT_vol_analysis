@@ -169,8 +169,86 @@ print("[-1024 ~ 0] volume(1slice) is " + str(area_1) + " cm^3,  " + str(round((r
 
 
 vol_1 = voi_cnt_1 * float(dcm.SliceThickness) * float(dcm.PixelSpacing[0])
-print("[-1024 ~ 0] volume is " + str(vol_1) + " cm^3,  " + str(round((voi_cnt_1/total_voi_cnt * 100),2)) + "%")
+print("[-1024 ~ 0] volume is " + str(vol_1) + " cm^3,  " + str(round((voi_cnt_1/total_vol_cnt * 100),2)) + "%")
 
 
-#3d 구성
-https://www.kaggle.com/tamal2000/3d-display-ct-scan
+
+
+from plotly import __version__
+from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
+from plotly.figure_factory import create_trisurf
+from plotly.graph_objs import *
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import scipy.ndimage
+from skimage import morphology
+from skimage import measure
+from skimage.transform import resize
+
+def resample(image, scan, new_spacing=[1,1,1]):
+    # Determine current pixel spacing
+    #spacing = map(float, ([scan[0].SliceThickness] + scan[0].PixelSpacing))
+    spacing = map(float, ([scan.SliceThickness] + list(scan.PixelSpacing)))
+    spacing = np.array(list(spacing))
+
+    resize_factor = spacing / new_spacing
+    new_real_shape = image.shape * resize_factor
+    new_shape = np.round(new_real_shape)
+    real_resize_factor = new_shape / image.shape
+    new_spacing = spacing / real_resize_factor
+    
+    image = scipy.ndimage.interpolation.zoom(image, real_resize_factor)
+    
+    return image, new_spacing
+
+def make_mesh(image, threshold=-300, step_size=1):
+
+    print ("Transposing surface")
+    p = image.transpose(2,1,0)
+        
+    print("Calculating surface")
+    verts, faces, norm, val = measure.marching_cubes_lewiner(p, threshold, step_size=step_size, allow_degenerate=True)
+    
+    return verts, faces
+    
+def plotly_3d(verts, faces):
+    x,y,z = zip(*verts) 
+    
+    # Make the colormap single color since the axes are positional not intensity. 
+    #colormap=['rgb(255,105,180)','rgb(255,255,51)','rgb(0,191,255)']
+    colormap=['rgb(236, 236, 212)','rgb(236, 236, 212)']
+    
+    fig = create_trisurf(x=x,
+                        y=y, 
+                        z=z, 
+                        plot_edges=False,
+                        colormap=colormap,
+                        simplices=faces,
+                        backgroundcolor='rgb(64, 64, 64)',
+                        title="Interactive Visualization")
+    iplot(fig)
+
+def plt_3d(verts, faces):
+    x,y,z = zip(*verts) 
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(111, projection='3d')
+    print ("Drawing")
+    # Fancy indexing: `verts[faces]` to generate a collection of triangles
+    mesh = Poly3DCollection(verts[faces], linewidths=0.05, alpha=1)
+    face_color = [1, 1, 0.9]
+    mesh.set_facecolor(face_color)
+    ax.add_collection3d(mesh)
+
+    ax.set_xlim(0, max(x))
+    ax.set_ylim(0, max(y))
+    ax.set_zlim(0, max(z))
+    ax.set_facecolor((0.7, 0.7, 0.7))
+    plt.show()
+
+
+imgs_after_resamp, spacing = resample(seg_list, dcm)
+print ("Shape after resampling\t", imgs_after_resamp.shape)
+
+#v, f = make_mesh(test, -350)
+v, f = make_mesh(test, 350, 1)
+plotly_3d(v, f)
+plt_3d(v, f)
