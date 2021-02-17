@@ -93,12 +93,26 @@ def hu_correction(dcm, img):
 #%% dicom * mask 
 
 seg_list = []
+img_set = []
 for i in range(len(img_list)):
     img = hu_correction(dcm, img_list[i])
+    img_set.append(img)
     seg = img * msk_img_array[:, :, len(img_list)- 1 - i]
     print(i)
     seg_list.append(seg)
 
+
+slice_num = 0
+plt.subplot(121)
+plt.hist(img_list[slice_num].flatten(), 100, [-1024, 1024], color = 'g')
+plt.xlim([-1024, 1024])
+plt.legend('histogram', loc = 'upper right')
+plt.subplot(122)
+plt.hist(img_set[slice_num].flatten(), 100, [-1024, 1024], color = 'g')
+plt.xlim([-1024, 1024])
+plt.legend('histogram', loc = 'upper right')
+plt.show()
+print("------------Hu correction completed-------------")
 print("------------segmentation completed--------------")
     
 
