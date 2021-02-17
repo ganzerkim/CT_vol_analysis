@@ -136,6 +136,7 @@ def roi_extraction(img, min_value, max_value):
 
 
 
+total_area_cnt = np.count_nonzero(msk_img_array[:, :, 0] == 1)
 roiimg_1, roi_cnt_1 = roi_extraction(seg_list[0], -1024, 0)
 
 
@@ -147,13 +148,14 @@ for idx in range(len(seg_list)):
     voi_cnt_1 += voi_cnt
     print(idx)
 
+total_vol_cnt = np.count_nonzero(msk_img_array == 1)
 
 area_1 = roi_cnt_1 * float(dcm.SliceThickness) * float(dcm.PixelSpacing[0])
-print("-1024 ~ 0 volume(1slice) is " + str(area_1) + " cm^3")
+print("[-1024 ~ 0] volume(1slice) is " + str(area_1) + " cm^3,  " + str(round((roi_cnt_1/total_area_cnt * 100),2)) + "%")
 
 
 vol_1 = voi_cnt_1 * float(dcm.SliceThickness) * float(dcm.PixelSpacing[0])
-print("-1024 ~ 0 volume is " + str(vol_1) + " cm^3")
+print("[-1024 ~ 0] volume is " + str(vol_1) + " cm^3,  " + str(round((voi_cnt_1/total_voi_cnt * 100),2)) + "%")
 
 
 #3d 구성
